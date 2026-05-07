@@ -3,6 +3,28 @@ import '../models/nodo.dart';
 
 class GeoService {
 
+  // Coordenadas reales de Mosquera, Cundinamarca
+  static const List<Nodo> nodos = [
+    Nodo(
+      nombre: 'NODO ALPHA — SENA Mosquera',
+      mision: 'MISION: Hackear el servidor de notas',
+      latitud: 4.7062,
+      longitud: -74.2301,
+    ),
+    Nodo(
+      nombre: 'NODO BETA — Parque Principal',
+      mision: 'MISION: Interceptar señal de radio',
+      latitud: 4.7082,
+      longitud: -74.2275,
+    ),
+    Nodo(
+      nombre: 'NODO GAMMA — Zona Industrial',
+      mision: 'MISION: Sabotaje de drones',
+      latitud: 4.7021,
+      longitud: -74.2350,
+    ),
+  ];
+
   /// Pide permiso de ubicación al usuario
   Future<bool> solicitarPermiso() async {
     LocationPermission permiso = await Geolocator.checkPermission();
@@ -29,5 +51,51 @@ class GeoService {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Calcula distancia en metros entre la posición actual y un nodo
+  double calcularDistancia(Position posicion, Nodo nodo) {
+    return Geolocator.distanceBetween(
+      posicion.latitude,
+      posicion.longitude,
+      nodo.latitud,
+      nodo.longitud,
+    );
+  }
+
+  /// Retorna solo los nodos que están a menos de 500 metros
+  List<Map<String, dynamic>> filtrarNodosCercanos(Position posicion) {
+    List<Map<String, dynamic>> resultado = [];
+
+    for (Nodo nodo in nodos) {
+      double distancia = calcularDistancia(posicion, nodo);
+      if (distancia <= 500) {
+        resultado.add({'nodo': nodo, 'distancia': distancia});
+      }
+    }
+
+    // Ordenar por distancia (el más cercano primero)
+    resultado.sort((a, b) =>
+        (a['distancia'] as double).compareTo(b['distancia'] as double));
+
+    return resultado;
+  }
+
+  /// Retorna el nodo más cercano y su distancia (sin importar si está a 500m)
+  Map<String, dynamic>? nodoCercano(Position posicion) {
+    if (nodos.isEmpty) return null;
+
+    Nodo cercano = nodos[0];
+    double menorDistancia = calcularDistancia(posicion, nodos[0]);
+
+    for (Nodo nodo in nodos.skip(1)) {
+      double distancia = calcularDistancia(posicion, nodo);
+      if (distancia < menorDistancia) {
+        menorDistancia = distancia;
+        cercano = nodo;
+      }
+    }
+
+    return {'nodo': cercano, 'distancia': menorDistancia};
   }
 }
