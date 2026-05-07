@@ -5,18 +5,32 @@ class AuthService {
 
   Future<bool> authenticate() async {
     try {
-      bool canCheck = await auth.canCheckBiometrics;
 
-      if (!canCheck) {
+      // Verificar si el dispositivo soporta biometría
+      bool isSupported = await auth.isDeviceSupported();
+
+      print("SOPORTE: $isSupported");
+
+      // Obtener biometrías disponibles
+      List<BiometricType> biometrics =
+          await auth.getAvailableBiometrics();
+
+      print("BIOMETRIAS: $biometrics");
+
+      if (!isSupported || biometrics.isEmpty) {
         return false;
       }
 
       bool authenticated = await auth.authenticate(
-        localizedReason: 'Validar identidad para acceder a ShadowNet',
+        localizedReason: 'Escanea tu huella para acceder',
       );
 
+      print("AUTENTICADO: $authenticated");
+
       return authenticated;
+
     } catch (e) {
+      print("ERROR: $e");
       return false;
     }
   }
