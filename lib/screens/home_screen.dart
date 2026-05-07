@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../widgets/terminal_text.dart';
@@ -13,6 +14,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final GeoService _geoService = GeoService();
+  StreamSubscription<Position>? _posicionStream;
 
   bool _cargando = true;
   String _estadoGPS = 'TRIANGULANDO NODOS...';
@@ -23,26 +25,49 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _escanearNodos();
+    _iniciarRadar();
   }
 
-  Future<void> _escanearNodos() async {
+  @override
+  void dispose() {
+    _posicionStream?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _iniciarRadar() async {
     setState(() {
       _cargando = true;
       _estadoGPS = 'TRIANGULANDO NODOS...';
     });
 
-    Position? posicion = await _geoService.obtenerPosicion();
+    bool tienePermiso = await _geoService.solicitarPermiso();
 
-    if (posicion == null) {
+    if (!tienePermiso) {
       setState(() {
         _cargando = false;
         _estadoGPS = 'ERROR: PERMISO GPS DENEGADO';
-        _nodosCercanos = [];
       });
       return;
     }
 
+    // Primera lectura inmediata para no esperar al primer movimiento
+    Position? posicionInicial = await _geoService.obtenerPosicion();
+    if (posicionInicial != null) {
+      _actualizarNodos(posicionInicial);
+    }
+
+    // Stream: se actualiza automáticamente cada 10 metros de movimiento
+    _posicionStream = Geolocator.getPositionStream(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.high,
+        distanceFilter: 10,
+      ),
+    ).listen((Position posicion) {
+      _actualizarNodos(posicion);
+    });
+  }
+
+  void _actualizarNodos(Position posicion) {
     List<Map<String, dynamic>> cercanos =
         _geoService.filtrarNodosCercanos(posicion);
     Map<String, dynamic>? cercano = _geoService.nodoCercano(posicion);
@@ -106,6 +131,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
               const SizedBox(height: 10),
 
+              // Reto Extra: distancia al nodo más cercano en tiempo real
               if (_distanciaCercana != null) ...[
                 TerminalText(
                   text: '> NODO MAS CERCANO: ${_distanciaCercana!.toStringAsFixed(0)}m',
@@ -150,7 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 30),
 
               GestureDetector(
-                onTap: _escanearNodos,
+                onTap: _iniciarRadar,
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(15),
