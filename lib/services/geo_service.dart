@@ -3,7 +3,6 @@ import '../models/nodo.dart';
 
 class GeoService {
 
-  // Coordenadas reales de Mosquera, Cundinamarca
   static const List<Nodo> nodos = [
     Nodo(
       nombre: 'NODO ALPHA — SENA Mosquera',
@@ -25,7 +24,7 @@ class GeoService {
     ),
   ];
 
-  /// Pide permiso de ubicación al usuario
+  
   Future<bool> solicitarPermiso() async {
     LocationPermission permiso = await Geolocator.checkPermission();
 
@@ -53,7 +52,6 @@ class GeoService {
     }
   }
 
-  /// Calcula distancia en metros entre la posición actual y un nodo
   double calcularDistancia(Position posicion, Nodo nodo) {
     return Geolocator.distanceBetween(
       posicion.latitude,
@@ -63,7 +61,6 @@ class GeoService {
     );
   }
 
-  /// Retorna solo los nodos que están a menos de 500 metros
   List<Map<String, dynamic>> filtrarNodosCercanos(Position posicion) {
     List<Map<String, dynamic>> resultado = [];
 
@@ -74,14 +71,12 @@ class GeoService {
       }
     }
 
-    // Ordenar por distancia (el más cercano primero)
     resultado.sort((a, b) =>
         (a['distancia'] as double).compareTo(b['distancia'] as double));
 
     return resultado;
   }
 
-  /// Retorna el nodo más cercano y su distancia (sin importar si está a 500m)
   Map<String, dynamic>? nodoCercano(Position posicion) {
     if (nodos.isEmpty) return null;
 
