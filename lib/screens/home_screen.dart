@@ -1,8 +1,68 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../widgets/terminal_text.dart';
+import '../services/geo_service.dart';
+import '../models/nodo.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final GeoService _geoService = GeoService();
+
+  bool _cargando = true;
+  String _estadoGPS = 'TRIANGULANDO NODOS...';
+  List<Map<String, dynamic>> _nodosCercanos = [];
+  String _nodoCercanoTexto = '';
+  double? _distanciaCercana;
+
+  @override
+  void initState() {
+    super.initState();
+    _escanearNodos();
+  }
+
+  Future<void> _escanearNodos() async {
+    setState(() {
+      _cargando = true;
+      _estadoGPS = 'TRIANGULANDO NODOS...';
+    });
+
+    Position? posicion = await _geoService.obtenerPosicion();
+
+    if (posicion == null) {
+      setState(() {
+        _cargando = false;
+        _estadoGPS = 'ERROR: PERMISO GPS DENEGADO';
+        _nodosCercanos = [];
+      });
+      return;
+    }
+
+    List<Map<String, dynamic>> cercanos =
+        _geoService.filtrarNodosCercanos(posicion);
+    Map<String, dynamic>? cercano = _geoService.nodoCercano(posicion);
+
+    setState(() {
+      _cargando = false;
+      _nodosCercanos = cercanos;
+
+      if (cercano != null) {
+        Nodo nodo = cercano['nodo'] as Nodo;
+        _distanciaCercana = cercano['distancia'] as double;
+        _nodoCercanoTexto = nodo.nombre;
+        _estadoGPS = cercanos.isNotEmpty
+            ? 'NODOS DETECTADOS: ${cercanos.length}'
+            : 'SIN NODOS EN RANGO (500m)';
+      } else {
+        _estadoGPS = 'SIN SEÑAL GPS';
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,113 +73,134 @@ class HomeScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
+              const SizedBox(height: 60),
 
-              SizedBox(height: 80),
+              const Center(
+                child: Icon(Icons.lock_open, color: Color(0xFF00FF00), size: 80),
+              ),
 
-              Center(
-                child: Icon(
-                  Icons.lock_open,
-                  color: Color(0xFF00FF00),
-                  size: 120,
+              const SizedBox(height: 20),
+
+              const Center(
+                child: TerminalText(text: 'ACCESS GRANTED', size: 28),
+              ),
+
+              const SizedBox(height: 30),
+
+              TerminalText(text: '=' * 38, size: 14),
+
+              const SizedBox(height: 20),
+
+              const TerminalText(text: '> GEO-RADAR ACTIVO', size: 18),
+
+              const SizedBox(height: 10),
+
+              TerminalText(
+                text: _estadoGPS,
+                size: 16,
+                color: _estadoGPS.contains('ERROR') || _estadoGPS.contains('SIN')
+                    ? Colors.red
+                    : const Color(0xFFFF8C00),
+              ),
+
+              const SizedBox(height: 10),
+
+              if (_distanciaCercana != null) ...[
+                TerminalText(
+                  text: '> NODO MAS CERCANO: ${_distanciaCercana!.toStringAsFixed(0)}m',
+                  size: 16,
+                  color: const Color(0xFFFF8C00),
+                ),
+                TerminalText(
+                  text: '  $_nodoCercanoTexto',
+                  size: 14,
+                  color: Colors.white70,
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              const SizedBox(height: 20),
+
+              if (_cargando)
+                const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF00FF00)),
+                )
+              else if (_nodosCercanos.isEmpty) ...[
+                const TerminalText(
+                  text: '> NO SE DETECTAN NODOS EN 500m',
+                  size: 16,
+                  color: Colors.red,
+                ),
+                const SizedBox(height: 8),
+                const TerminalText(
+                  text: '  Desplazate a una zona de operacion.',
+                  size: 14,
+                ),
+              ] else ...[
+                const TerminalText(text: '> NODOS DESBLOQUEADOS:', size: 18),
+                const SizedBox(height: 15),
+                ..._nodosCercanos.map((item) {
+                  Nodo nodo = item['nodo'] as Nodo;
+                  double distancia = item['distancia'] as double;
+                  return _buildNodoCard(nodo, distancia);
+                }),
+              ],
+
+              const SizedBox(height: 30),
+
+              GestureDetector(
+                onTap: _escanearNodos,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(15),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: const Color(0xFF00FF00), width: 2),
+                  ),
+                  child: const Center(
+                    child: TerminalText(text: '[ RE-ESCANEAR NODOS ]', size: 18),
+                  ),
                 ),
               ),
 
-              SizedBox(height: 30),
-
-              Center(
-                child: TerminalText(
-                  text: 'ACCESS GRANTED',
-                  size: 34,
-                ),
-              ),
-
-              SizedBox(height: 50),
-
-              TerminalText(
-                text: 'Conectando a servidores Coca-Cola...',
-                size: 18,
-              ),
-
-              SizedBox(height: 15),
-
-              TerminalText(
-                text: 'Bypass de firewall completado...',
-                size: 18,
-              ),
-
-              SizedBox(height: 15),
-
-              TerminalText(
-                text: 'Descargando archivos clasificados...',
-                size: 18,
-              ),
-
-              SizedBox(height: 40),
-
-              TerminalText(
-                text: '========== RECETA CLASIFICADA ==========',
-                size: 20,
-              ),
-
-              SizedBox(height: 30),
-
-              TerminalText(
-                text: 'Azucar Refinada: 70%',
-                size: 18,
-              ),
-
-              SizedBox(height: 10),
-
-              TerminalText(
-                text: 'Extracto de Vainilla: 12%',
-                size: 18,
-              ),
-
-              SizedBox(height: 10),
-
-              TerminalText(
-                text: 'Aceites Citricos Secretos: 8%',
-                size: 18,
-              ),
-
-              SizedBox(height: 10),
-
-              TerminalText(
-                text: 'Cafeina: 3%',
-                size: 18,
-              ),
-
-              SizedBox(height: 10),
-
-              TerminalText(
-                text: 'Componente X-13: CLASIFICADO',
-                size: 18,
-              ),
-
-              SizedBox(height: 40),
-
-              TerminalText(
-                text: 'ShadowNet conectado correctamente.',
-                size: 18,
-              ),
-
-              SizedBox(height: 20),
-
-              TerminalText(
-                text: 'Estado del sistema: ESTABLE',
-                size: 18,
-              ),
-
-              SizedBox(height: 20),
-
-              TerminalText(
-                text: 'Nivel de acceso: ROOT',
-                size: 18,
-              ),
+              const SizedBox(height: 30),
+              TerminalText(text: '=' * 38, size: 14),
+              const SizedBox(height: 15),
+              const TerminalText(text: 'OBJETIVO: Hackear receta Coca-Cola', size: 16),
+              const SizedBox(height: 10),
+              const TerminalText(text: 'ShadowNet conectado. Estado: ESTABLE', size: 14),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNodoCard(Nodo nodo, double distancia) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 15),
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF00FF00), width: 1),
+        color: const Color(0xFF001100),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TerminalText(text: '>> ${nodo.nombre}', size: 16),
+          const SizedBox(height: 8),
+          TerminalText(
+            text: nodo.mision,
+            size: 14,
+            color: const Color(0xFFFF8C00),
+          ),
+          const SizedBox(height: 6),
+          TerminalText(
+            text: 'DISTANCIA: ${distancia.toStringAsFixed(0)} metros',
+            size: 13,
+            color: Colors.white60,
+          ),
+        ],
       ),
     );
   }
