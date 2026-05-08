@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../widgets/terminal_text.dart';
 import '../services/geo_service.dart';
+import '../services/vibration.dart';
 import '../models/nodo.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -57,19 +58,21 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     // Stream: se actualiza automáticamente cada 10 metros de movimiento
-    _posicionStream = Geolocator.getPositionStream(
-      locationSettings: const LocationSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
-      ),
-    ).listen((Position posicion) {
-      _actualizarNodos(posicion);
-    });
+    _posicionStream =
+        Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 10,
+          ),
+        ).listen((Position posicion) {
+          _actualizarNodos(posicion);
+        });
   }
 
   void _actualizarNodos(Position posicion) {
-    List<Map<String, dynamic>> cercanos =
-        _geoService.filtrarNodosCercanos(posicion);
+    List<Map<String, dynamic>> cercanos = _geoService.filtrarNodosCercanos(
+      posicion,
+    );
     Map<String, dynamic>? cercano = _geoService.nodoCercano(posicion);
 
     setState(() {
@@ -77,9 +80,15 @@ class _HomeScreenState extends State<HomeScreen> {
       _nodosCercanos = cercanos;
 
       if (cercano != null) {
-        Nodo nodo = cercano['nodo'] as Nodo;
-        _distanciaCercana = cercano['distancia'] as double;
-        _nodoCercanoTexto = nodo.nombre;
+        double distancia = cercano['distancia'] as double;
+        _distanciaCercana = distancia;
+        _nodoCercanoTexto = (cercano['nodo'] as Nodo).nombre;
+
+        // LÓGICA DE LA FASE 3: Si estás a menos de 50m, activas el Morse
+        if (distancia <= 50) {
+          VibrationService.vibrarHackExitoso();
+        }
+
         _estadoGPS = cercanos.isNotEmpty
             ? 'NODOS DETECTADOS: ${cercanos.length}'
             : 'SIN NODOS EN RANGO (500m)';
@@ -102,7 +111,11 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 60),
 
               const Center(
-                child: Icon(Icons.lock_open, color: Color(0xFF00FF00), size: 80),
+                child: Icon(
+                  Icons.lock_open,
+                  color: Color(0xFF00FF00),
+                  size: 80,
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -124,7 +137,8 @@ class _HomeScreenState extends State<HomeScreen> {
               TerminalText(
                 text: _estadoGPS,
                 size: 16,
-                color: _estadoGPS.contains('ERROR') || _estadoGPS.contains('SIN')
+                color:
+                    _estadoGPS.contains('ERROR') || _estadoGPS.contains('SIN')
                     ? Colors.red
                     : const Color(0xFFFF8C00),
               ),
@@ -134,7 +148,8 @@ class _HomeScreenState extends State<HomeScreen> {
               // Reto Extra: distancia al nodo más cercano en tiempo real
               if (_distanciaCercana != null) ...[
                 TerminalText(
-                  text: '> NODO MAS CERCANO: ${_distanciaCercana!.toStringAsFixed(0)}m',
+                  text:
+                      '> NODO MAS CERCANO: ${_distanciaCercana!.toStringAsFixed(0)}m',
                   size: 16,
                   color: const Color(0xFFFF8C00),
                 ),
@@ -181,10 +196,16 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(15),
                   decoration: BoxDecoration(
-                    border: Border.all(color: const Color(0xFF00FF00), width: 2),
+                    border: Border.all(
+                      color: const Color(0xFF00FF00),
+                      width: 2,
+                    ),
                   ),
                   child: const Center(
-                    child: TerminalText(text: '[ RE-ESCANEAR NODOS ]', size: 18),
+                    child: TerminalText(
+                      text: '[ RE-ESCANEAR NODOS ]',
+                      size: 18,
+                    ),
                   ),
                 ),
               ),
@@ -192,9 +213,15 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 30),
               TerminalText(text: '=' * 38, size: 14),
               const SizedBox(height: 15),
-              const TerminalText(text: 'OBJETIVO: Hackear receta Coca-Cola', size: 16),
+              const TerminalText(
+                text: 'OBJETIVO: Hackear receta Coca-Cola',
+                size: 16,
+              ),
               const SizedBox(height: 10),
-              const TerminalText(text: 'ShadowNet conectado. Estado: ESTABLE', size: 14),
+              const TerminalText(
+                text: 'ShadowNet conectado. Estado: ESTABLE',
+                size: 14,
+              ),
             ],
           ),
         ),

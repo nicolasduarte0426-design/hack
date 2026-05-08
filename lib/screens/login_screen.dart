@@ -43,9 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => const HomeScreen(),
-        ),
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
       failedAttempts++;
@@ -56,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
           statusText = 'PROTOCOLO DE AUTODESTRUCCION INICIADO';
         });
 
-        if (await Vibration.hasVibrator() ?? false) {
+        if (await Vibration.hasVibrator() == true) {
           Vibration.vibrate(duration: 5000);
         }
 
@@ -69,8 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       } else {
         setState(() {
-          statusText =
-              'ACCESO DENEGADO | INTENTO $failedAttempts DE 3';
+          statusText = 'ACCESO DENEGADO | INTENTO $failedAttempts DE 3';
         });
       }
     }
@@ -87,18 +84,11 @@ class _LoginScreenState extends State<LoginScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.lock,
-                color: Color(0xFF00FF00),
-                size: 100,
-              ),
+              const Icon(Icons.lock, color: Color(0xFF00FF00), size: 100),
 
               const SizedBox(height: 30),
 
-              const TerminalText(
-                text: 'SHADOWNET TERMINAL',
-                size: 32,
-              ),
+              const TerminalText(text: 'SHADOWNET TERMINAL', size: 32),
 
               const SizedBox(height: 20),
 
@@ -123,18 +113,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 onPressed: blocked ? null : authenticate,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.black,
-                  side: const BorderSide(
-                    color: Color(0xFF00FF00),
-                    width: 2,
-                  ),
+                  side: const BorderSide(color: Color(0xFF00FF00), width: 2),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 30,
                     vertical: 15,
                   ),
                 ),
-                child: const TerminalText(
-                  text: 'ESCANEAR HUELLA',
-                ),
+                child: const TerminalText(text: 'ESCANEAR HUELLA'),
               ),
             ],
           ),
