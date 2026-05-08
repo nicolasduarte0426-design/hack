@@ -15,4 +15,10 @@ class VibrationService {
       Vibration.vibrate(duration: 1000);
     }
   }
+
+  static Future<void> vibrarAutodestruccion() async {
+    if (await Vibration.hasVibrator() == true) {
+      Vibration.vibrate(pattern: [0, 1000, 100, 1000, 100, 1000, 100, 1000]);
+    }
+  }
 }

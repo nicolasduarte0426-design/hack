@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
+import '../widgets/typewriter_text.dart';
 import '../widgets/terminal_text.dart';
+import '../services/audio_service.dart';
 import '../services/geo_service.dart';
 import '../services/vibration.dart';
 import '../models/nodo.dart';
@@ -18,14 +21,19 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<Position>? _posicionStream;
 
   bool _cargando = true;
+  bool _modoPanico = false;
   String _estadoGPS = 'TRIANGULANDO NODOS...';
   List<Map<String, dynamic>> _nodosCercanos = [];
+  List<String> _kernelLogs = []; // Para los mensajes tipo Linux
   String _nodoCercanoTexto = '';
   double? _distanciaCercana;
 
   @override
   void initState() {
     super.initState();
+    // Sonido de inicio de sistema ShadowNet
+    AudioService.playEffect('access.mp3');
+    _iniciarLogsKernel(); // Inicia la secuencia de mensajes
     _iniciarRadar();
   }
 
@@ -69,6 +77,14 @@ class _HomeScreenState extends State<HomeScreen> {
         });
   }
 
+  void _iniciarLogsKernel() {
+    _kernelLogs.addAll([
+      'INICIANDO SHELL SHADOWNET...',
+      'CARGANDO PROCESOS DE GEOLOCALIZACIÓN...',
+      'RADAR HABILITADO',
+    ]);
+  }
+
   void _actualizarNodos(Position posicion) {
     List<Map<String, dynamic>> cercanos = _geoService.filtrarNodosCercanos(
       posicion,
@@ -84,9 +100,12 @@ class _HomeScreenState extends State<HomeScreen> {
         _distanciaCercana = distancia;
         _nodoCercanoTexto = (cercano['nodo'] as Nodo).nombre;
 
-        // LÓGICA DE LA FASE 3: Si estás a menos de 50m, activas el Morse
+        // Feedback Triple: Visual, Táctil y Auditivo
         if (distancia <= 50) {
           VibrationService.vibrarHackExitoso();
+          AudioService.playEffect('radar.mp3');
+
+          _kernelLogs.insert(0, '>>> NODO DETECTADO: INICIANDO EXTRACCIÓN...');
         }
 
         _estadoGPS = cercanos.isNotEmpty
@@ -141,17 +160,32 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 60,
                           ),
                         ),
-                        const Center(
-                          child: TerminalText(text: 'ACCESS GRANTED', size: 24),
+                        const SizedBox(height: 10),
+                        Center(
+                          child: TypewriterText(
+                            text: 'ACCESS GRANTED',
+                            style: const TextStyle(
+                              color: Color(0xFF00FF00),
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'monospace',
+                            ),
+                            duration: const Duration(milliseconds: 80),
+                          ),
                         ),
                         const SizedBox(height: 20),
                         _buildLinuxBanner(),
                         const SizedBox(height: 20),
                         TerminalText(text: '=' * 30, size: 12),
                         const SizedBox(height: 10),
-                        const TerminalText(
+                        TypewriterText(
                           text: '> GEO-RADAR ACTIVO',
-                          size: 16,
+                          style: const TextStyle(
+                            color: Color(0xFFFF8C00),
+                            fontSize: 16,
+                            fontFamily: 'monospace',
+                          ),
+                          duration: const Duration(milliseconds: 40),
                         ),
                         const SizedBox(height: 10),
                         TerminalText(
@@ -243,12 +277,26 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const TerminalText(text: "KERNEL: v2.0.84-RELEASE", size: 12),
-        const TerminalText(text: "OPERADOR: R.S.T correa.duarte.ramirez", size: 12),
-        const TerminalText(text: "UBICACION: Sena CBA Mosquera", size: 12),
-        TerminalText(
-          text: "FECHA: ${DateTime.now().toString().substring(0, 16)}",
+        const TerminalText(
+          text: "OPERADOR: R.S.T correa.duarte.ramirez",
           size: 12,
         ),
+        const TerminalText(text: "UBICACION: Sena CBA Mosquera", size: 12),
+        TypewriterText(
+          text: "FECHA: ${DateTime.now().toString().substring(0, 16)}",
+          style: const TextStyle(
+            color: Color(0xFF00FF41),
+            fontSize: 12,
+            fontFamily: 'monospace',
+          ),
+          duration: const Duration(milliseconds: 40),
+        ),
+        if (_modoPanico)
+          const TerminalText(
+            text: "MODO PANICO ACTIVADO",
+            size: 12,
+            color: Colors.red,
+          ),
         const SizedBox(height: 5),
         const TerminalText(
           text: "STATUS: SYSTEM_READY",

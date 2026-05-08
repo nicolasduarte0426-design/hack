@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:vibration/vibration.dart';
 
+import '../services/audio_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/terminal_text.dart';
 import 'home_screen.dart';
@@ -56,6 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (await Vibration.hasVibrator() == true) {
           Vibration.vibrate(duration: 5000);
+          AudioService.playExplosion();
         }
 
         await Future.delayed(const Duration(seconds: 5));
