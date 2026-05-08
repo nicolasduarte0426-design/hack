@@ -102,128 +102,174 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 60),
-
-              const Center(
-                child: Icon(
-                  Icons.lock_open,
-                  color: Color(0xFF00FF00),
-                  size: 80,
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              const Center(
-                child: TerminalText(text: 'ACCESS GRANTED', size: 28),
-              ),
-
-              const SizedBox(height: 30),
-
-              TerminalText(text: '=' * 38, size: 14),
-
-              const SizedBox(height: 20),
-
-              const TerminalText(text: '> GEO-RADAR ACTIVO', size: 18),
-
-              const SizedBox(height: 10),
-
-              TerminalText(
-                text: _estadoGPS,
-                size: 16,
-                color:
-                    _estadoGPS.contains('ERROR') || _estadoGPS.contains('SIN')
-                    ? Colors.red
-                    : const Color(0xFFFF8C00),
-              ),
-
-              const SizedBox(height: 10),
-
-              // Reto Extra: distancia al nodo más cercano en tiempo real
-              if (_distanciaCercana != null) ...[
-                TerminalText(
-                  text:
-                      '> NODO MAS CERCANO: ${_distanciaCercana!.toStringAsFixed(0)}m',
-                  size: 16,
-                  color: const Color(0xFFFF8C00),
-                ),
-                TerminalText(
-                  text: '  $_nodoCercanoTexto',
-                  size: 14,
-                  color: Colors.white70,
-                ),
-                const SizedBox(height: 10),
-              ],
-
-              const SizedBox(height: 20),
-
-              if (_cargando)
-                const Center(
-                  child: CircularProgressIndicator(color: Color(0xFF00FF00)),
-                )
-              else if (_nodosCercanos.isEmpty) ...[
-                const TerminalText(
-                  text: '> NO SE DETECTAN NODOS EN 500m',
-                  size: 16,
-                  color: Colors.red,
-                ),
-                const SizedBox(height: 8),
-                const TerminalText(
-                  text: '  Desplazate a una zona de operacion.',
-                  size: 14,
-                ),
-              ] else ...[
-                const TerminalText(text: '> NODOS DESBLOQUEADOS:', size: 18),
-                const SizedBox(height: 15),
-                ..._nodosCercanos.map((item) {
-                  Nodo nodo = item['nodo'] as Nodo;
-                  double distancia = item['distancia'] as double;
-                  return _buildNodoCard(nodo, distancia);
-                }),
-              ],
-
-              const SizedBox(height: 30),
-
-              GestureDetector(
-                onTap: _iniciarRadar,
-                child: Container(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(10.0),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFF00FF41), width: 2),
+            ),
+            child: Column(
+              children: [
+                Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: const Color(0xFF00FF00),
-                      width: 2,
-                    ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 4,
+                    horizontal: 10,
                   ),
-                  child: const Center(
-                    child: TerminalText(
-                      text: '[ RE-ESCANEAR NODOS ]',
-                      size: 18,
+                  color: const Color(0xFF00FF41),
+                  child: const Text(
+                    "TERMINAL - SHADOWNET OS v2.0.84",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      fontFamily: 'monospace',
                     ),
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 30),
-              TerminalText(text: '=' * 38, size: 14),
-              const SizedBox(height: 15),
-              const TerminalText(
-                text: 'OBJETIVO: Hackear receta Coca-Cola',
-                size: 16,
-              ),
-              const SizedBox(height: 10),
-              const TerminalText(
-                text: 'ShadowNet conectado. Estado: ESTABLE',
-                size: 14,
-              ),
-            ],
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(15),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Center(
+                          child: Icon(
+                            Icons.lock_open,
+                            color: Color(0xFF00FF00),
+                            size: 60,
+                          ),
+                        ),
+                        const Center(
+                          child: TerminalText(text: 'ACCESS GRANTED', size: 24),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildLinuxBanner(),
+                        const SizedBox(height: 20),
+                        TerminalText(text: '=' * 30, size: 12),
+                        const SizedBox(height: 10),
+                        const TerminalText(
+                          text: '> GEO-RADAR ACTIVO',
+                          size: 16,
+                        ),
+                        const SizedBox(height: 10),
+                        TerminalText(
+                          text: _estadoGPS,
+                          size: 16,
+                          color:
+                              _estadoGPS.contains('ERROR') ||
+                                  _estadoGPS.contains('SIN')
+                              ? Colors.red
+                              : const Color(0xFFFF8C00),
+                        ),
+                        const SizedBox(height: 10),
+                        if (_distanciaCercana != null) ...[
+                          TerminalText(
+                            text:
+                                '> NODO MAS CERCANO: ${_distanciaCercana!.toStringAsFixed(0)}m',
+                            size: 16,
+                            color: const Color(0xFFFF8C00),
+                          ),
+                          TerminalText(
+                            text: '  $_nodoCercanoTexto',
+                            size: 14,
+                            color: Colors.white70,
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        const SizedBox(height: 20),
+                        if (_cargando)
+                          const Center(
+                            child: CircularProgressIndicator(
+                              color: Color(0xFF00FF00),
+                            ),
+                          )
+                        else if (_nodosCercanos.isEmpty) ...[
+                          const TerminalText(
+                            text: '> NO SE DETECTAN NODOS EN 500m',
+                            size: 16,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 8),
+                          const TerminalText(
+                            text: '  Desplazate a una zona de operacion.',
+                            size: 14,
+                          ),
+                        ] else ...[
+                          const TerminalText(
+                            text: '> NODOS DESBLOQUEADOS:',
+                            size: 18,
+                          ),
+                          const SizedBox(height: 15),
+                          ..._nodosCercanos.map((item) {
+                            Nodo nodo = item['nodo'] as Nodo;
+                            double distancia = item['distancia'] as double;
+                            return _buildNodoCard(nodo, distancia);
+                          }),
+                        ],
+                        const SizedBox(height: 30),
+                        _buildBotonRescanear(),
+                        const SizedBox(height: 30),
+                        TerminalText(text: '=' * 38, size: 14),
+                        const SizedBox(height: 15),
+                        const TerminalText(
+                          text: 'OBJETIVO: Hackear receta Coca-Cola',
+                          size: 16,
+                        ),
+                        const SizedBox(height: 10),
+                        const TerminalText(
+                          text: 'ShadowNet conectado. Estado: ESTABLE',
+                          size: 14,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const Padding(
+                  padding: EdgeInsets.all(8.0),
+                  child: TerminalText(text: "root@shadowNet:~# _", size: 14),
+                ),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLinuxBanner() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const TerminalText(text: "KERNEL: v2.0.84-RELEASE", size: 12),
+        const TerminalText(text: "OPERADOR: R.S.T correa.duarte.ramirez", size: 12),
+        const TerminalText(text: "UBICACION: Sena CBA Mosquera", size: 12),
+        TerminalText(
+          text: "FECHA: ${DateTime.now().toString().substring(0, 16)}",
+          size: 12,
+        ),
+        const SizedBox(height: 5),
+        const TerminalText(
+          text: "STATUS: SYSTEM_READY",
+          size: 12,
+          color: Colors.orange,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBotonRescanear() {
+    return GestureDetector(
+      onTap: _iniciarRadar,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          border: Border.all(color: const Color(0xFF00FF00), width: 2),
+        ),
+        child: const Center(
+          child: TerminalText(text: '[ RE-ESCANEAR NODOS ]', size: 18),
         ),
       ),
     );
