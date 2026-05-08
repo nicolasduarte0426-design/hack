@@ -3,26 +3,52 @@ import '../models/nodo.dart';
 
 class GeoService {
 
-  static const List<Nodo> nodos = [
-    Nodo(
-      nombre: 'NODO ALPHA — SENA Mosquera',
-      mision: 'MISION: Hackear el servidor de notas',
-      latitud: 4.7062,
-      longitud: -74.2301,
-    ),
-    Nodo(
-      nombre: 'NODO BETA — Parque Principal',
-      mision: 'MISION: Interceptar señal de radio',
-      latitud: 4.7082,
-      longitud: -74.2275,
-    ),
-    Nodo(
-      nombre: 'NODO GAMMA — Zona Industrial',
-      mision: 'MISION: Sabotaje de drones',
-      latitud: 4.7021,
-      longitud: -74.2350,
-    ),
-  ];
+ static List<Nodo> nodos = [
+  // NODO 1: SENA CBA (Sede Mosquera)
+  Nodo(
+    nombre: 'NODO ALPHA – sena bloque c',
+    mision: 'MISION: Robar informacion de los ingredientes',
+    latitud: 4.695216,
+    longitud: -74.217058,
+    pregunta: '¿Cual es el nombre que recibe la coca-cola sin azucar?',
+    respuesta: 'zero',
+    pistas: [
+      'tiene tapa negra',
+      'El nombre contiene un numero escrito',
+      'Z _ _ O'
+    ],
+  ),
+
+  // NODO 2: Parque Principal de Mosquera
+  Nodo(
+    nombre: 'NODO BETA – parque principal',
+    mision: 'MISION: Obtencion del ingrediente secreto',
+    latitud: 4.712315,
+    longitud: -74.220820,
+    pregunta: '¿Cual es el animal representativo de coca-cola?',
+    respuesta: 'oso polar',
+    pistas: [
+      'representa la navidad',
+      'esta en peligro de extincion',
+      'O _ _   _ _ _ _ R '
+    ],
+  ),
+
+  // NODO 3: Zona Industrial (Cerca de planta de producción)
+  Nodo(
+    nombre: 'NODO GAMMA – zona industrial',
+    mision: 'MISION: sabotaje de la preparacion',
+    latitud: 4.704962,
+    longitud: -74.230212,
+    pregunta: '¿cual es el principal competidor de coca-cola?',
+    respuesta: 'pepsi',
+    pistas: [
+      'su color representativo es azul',
+      'tuvo a michael jackson como imagen',
+      'P _ _ _ I'
+    ],
+  ),
+];
 
   
   Future<bool> solicitarPermiso() async {

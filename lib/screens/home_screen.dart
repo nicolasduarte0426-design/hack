@@ -28,6 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
   String _nodoCercanoTexto = '';
   double? _distanciaCercana;
 
+  int _indiceNodoActual = 0;
+  int _intentosFallidos = 0;
+  bool _desafioAbierto = false; // Evita que el diálogo se abra muchas veces
+
   @override
   void initState() {
     super.initState();
@@ -100,21 +104,189 @@ class _HomeScreenState extends State<HomeScreen> {
         _distanciaCercana = distancia;
         _nodoCercanoTexto = (cercano['nodo'] as Nodo).nombre;
 
-        // Feedback Triple: Visual, Táctil y Auditivo
-        if (distancia <= 50) {
-          VibrationService.vibrarHackExitoso();
-          AudioService.playEffect('radar.mp3');
-
-          _kernelLogs.insert(0, '>>> NODO DETECTADO: INICIANDO EXTRACCIÓN...');
-        }
-
         _estadoGPS = cercanos.isNotEmpty
-            ? 'NODOS DETECTADOS: ${cercanos.length}'
+            ? cercanos.length == 1
+                  ? 'NODO DETECTADO: 1'
+                  : 'NODOS DETECTADOS: ${cercanos.length}'
             : 'SIN NODOS EN RANGO (500m)';
       } else {
         _estadoGPS = 'SIN SEÑAL GPS';
       }
     });
+
+    _rastrearNodoActivo(posicion);
+  }
+
+  void _rastrearNodoActivo(Position posicionActual) {
+    if (_indiceNodoActual < GeoService.nodos.length) {
+      Nodo nodoObjetivo = GeoService.nodos[_indiceNodoActual];
+
+      double distancia = _geoService.calcularDistancia(
+        posicionActual,
+        nodoObjetivo,
+      );
+
+      setState(() {
+        _distanciaCercana = distancia;
+        _nodoCercanoTexto = nodoObjetivo.nombre;
+      });
+
+      if (distancia <= 50 && !_desafioAbierto) {
+        _mostrarPantallaHacker(nodoObjetivo);
+      }
+    } else {
+      setState(() {
+        _nodoCercanoTexto = 'SISTEMA TOTALMENTE HACKEADO';
+      });
+    }
+  }
+
+  void _comprobarRespuesta(String entrada, Nodo nodo) {
+    String respuestaUser = entrada.toLowerCase().trim();
+
+    if (respuestaUser == nodo.respuesta.toLowerCase()) {
+      // --- ACIERTO ---
+      Navigator.pop(context);
+      AudioService.playEffect('radar.mp3');
+      VibrationService.vibrarHackExitoso();
+
+      setState(() {
+        _indiceNodoActual++;
+        _intentosFallidos = 0;
+        _desafioAbierto = false;
+        _kernelLogs.insert(0, '>>> ACCESO CONCEDIDO AL NODO: ${nodo.nombre}');
+      });
+    } else {
+      // --- CADA RESPUESTA INCORRECTA ---
+      setState(() {
+        _intentosFallidos++;
+      });
+
+      // 1. Sonido de emergencia en cada error (1, 2 y 3)
+      AudioService.playEmergency();
+
+      if (_intentosFallidos >= 3) {
+        // 2. AL CUMPLIR LA 3ra RESPUESTA INCORRECTA
+        Navigator.pop(context); // Cierra el diálogo de la pregunta
+        _mostrarAlertaDatosIncorrectos(); // Dispara la alerta de bloqueo
+      } else {
+        // Feedback visual/vibración para los intentos 1 y 2
+        VibrationService.vibrarError();
+      }
+    }
+  }
+
+  void _mostrarAlertaDatosIncorrectos() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          side: BorderSide(color: Colors.red, width: 2),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red),
+            SizedBox(width: 10),
+            Text(
+              'ALERTA DE SEGURIDAD',
+              style: TextStyle(color: Colors.red, fontFamily: 'monospace'),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TerminalText(
+              text:
+                  'DATOS INCORRECTOS DETECTADOS.\n\nEL SISTEMA SE HA BLOQUEADO. INICIANDO PROTOCOLO DE AUTODESTRUCCIÓN DE DATOS.',
+              color: Colors.red,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _ejecutarProtocoloReinicio(); // Ejecuta explosión y vuelve al Nodo Alpha
+            },
+            child: Text(
+              '[ REINICIAR KERNEL ]',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _ejecutarProtocoloReinicio() async {
+    // 1. Efecto final de explosión y vibración de 5 segundos
+    await AudioService.playExplosion();
+    VibrationService.vibrarAutodestruccion();
+
+    setState(() {
+      _indiceNodoActual = 0; // Bloquea el progreso y vuelve al primer nodo
+      _intentosFallidos = 0;
+      _desafioAbierto = false;
+      _kernelLogs.insert(0, '!!! SISTEMA REINICIADO: VUELVA AL NODO ALPHA');
+    });
+  }
+
+  void _mostrarPantallaHacker(Nodo nodo) {
+    if (_desafioAbierto) return;
+    _desafioAbierto = true;
+
+    final TextEditingController _controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        // Para que el diálogo se actualice al fallar
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: Colors.black,
+          title: TerminalText(text: ">>> ${nodo.nombre}", color: Colors.green),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TerminalText(text: nodo.mision, size: 12),
+              const Divider(color: Colors.green),
+              TerminalText(text: nodo.pregunta),
+              if (_intentosFallidos > 0)
+                TerminalText(
+                  text: "\nPISTA: ${nodo.pistas[_intentosFallidos - 1]}",
+                  color: Colors.orange,
+                  size: 11,
+                ),
+              TextField(
+                controller: _controller,
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontFamily: 'monospace',
+                ),
+                decoration: const InputDecoration(
+                  labelText: "INPUT CODE",
+                  labelStyle: TextStyle(color: Colors.green),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _comprobarRespuesta(_controller.text, nodo);
+                setDialogState(
+                  () {},
+                ); // Actualiza el diálogo para mostrar la pista
+              },
+              child: const TerminalText(text: "[ EJECUTAR ]"),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -200,15 +372,17 @@ class _HomeScreenState extends State<HomeScreen> {
                         const SizedBox(height: 10),
                         if (_distanciaCercana != null) ...[
                           TerminalText(
-                            text:
-                                '> NODO MAS CERCANO: ${_distanciaCercana!.toStringAsFixed(0)}m',
-                            size: 16,
-                            color: const Color(0xFFFF8C00),
+                            text: 'OBJETIVO ACTUAL: ${_nodoCercanoTexto}',
                           ),
                           TerminalText(
-                            text: '  $_nodoCercanoTexto',
-                            size: 14,
-                            color: Colors.white70,
+                            text:
+                                'DISTANCIA: ${_distanciaCercana!.toStringAsFixed(1)} mts',
+                            color: Colors.yellow,
+                          ),
+                          TerminalText(
+                            text:
+                                'FASE DE HACKEO: ${_indiceNodoActual + 1} / ${GeoService.nodos.length}',
+                            size: 10,
                           ),
                           const SizedBox(height: 10),
                         ],
@@ -231,16 +405,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             size: 14,
                           ),
                         ] else ...[
-                          const TerminalText(
-                            text: '> NODOS DESBLOQUEADOS:',
+                          TerminalText(
+                            text: _nodosCercanos.length == 1
+                                ? '> NODO DETECTADO:'
+                                : '> NODO MAS CERCANO:',
                             size: 18,
                           ),
                           const SizedBox(height: 15),
-                          ..._nodosCercanos.map((item) {
-                            Nodo nodo = item['nodo'] as Nodo;
-                            double distancia = item['distancia'] as double;
-                            return _buildNodoCard(nodo, distancia);
-                          }),
+                          _buildNodoCard(
+                            _nodosCercanos.first['nodo'] as Nodo,
+                            _nodosCercanos.first['distancia'] as double,
+                          ),
                         ],
                         const SizedBox(height: 30),
                         _buildBotonRescanear(),

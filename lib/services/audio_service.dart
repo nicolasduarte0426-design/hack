@@ -13,13 +13,17 @@ class AudioService {
       print("Error al reproducir audio: $e");
     }
   }
-static Future<void> playExplosion() async {
-  await _player.setVolume(1.0); // Volumen al máximo para el impacto
-  await _player.play(AssetSource('sounds/explosion.mp3'));
-}
+
+  static Future<void> playExplosion() async {
+    await _player.setVolume(1.0); // Volumen al máximo para el impacto
+    await _player.play(AssetSource('sounds/explosion.mp3'));
+  }
+
   // Función para la alerta de emergencia (bucle o volumen alto)
   static Future<void> playEmergency() async {
-    await _player.setVolume(1.0);
+    // Subimos el volumen para que se note el error
+    await _player.setVolume(0.8);
+    // Usamos el archivo de alerta que registraste en el pubspec.yaml
     await _player.play(AssetSource('sounds/emergency.mp3'));
   }
 }
